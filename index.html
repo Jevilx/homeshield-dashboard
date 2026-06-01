@@ -462,6 +462,7 @@ SYSTEM SAFE
 
 </div>
 
+
 <script>
 
 // SPLASH
@@ -501,6 +502,14 @@ setInterval(updateClock,1000);
 
 updateClock();
 
+// NOTIFICATION PERMISSION
+
+if (
+Notification.permission !== "granted"
+) {
+
+Notification.requestPermission();
+}
 // ALERT SOUND
 
 const alarm=
@@ -699,6 +708,24 @@ alertBox.classList.add(
 );
 
 alarm.play();
+
+// PHONE NOTIFICATION
+
+if (
+Notification.permission ===
+"granted"
+) {
+
+new Notification(
+"⚠ HomeShield Alert",
+{
+
+body: msg,
+
+icon: "logo.png"
+
+});
+}
 
 }else{
 
