@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<link rel="manifest"
+href="manifest.json">
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>HomeShield Dashboard</title>
+
+<link rel="icon"
+type="image/png"
+href="logo.png">
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+
+body{
+margin:0;
+padding:20px;
+background:#0b0f19;
+color:white;
+font-family:Arial;
+}
+
+/* SPLASH */
+
+#splash{
+
+position:fixed;
+inset:0;
+background:#0b0f19;
+
+display:flex;
+flex-direction:column;
+
+justify-content:center;
+align-items:center;
+
+z-index:9999;
+
+transition:1s;
+}
+
+#splash img{
+
+width:180px;
+
+filter:
+drop-shadow(
+0 0 20px #00ffd0
+);
+
+animation:glow 2s infinite;
+}
+
+#splash h1{
+
+margin-top:20px;
+
+color:#00ffd0;
+
+font-size:42px;
+}
+
+@keyframes glow{
+
+50%{
+
+transform:scale(1.05);
+}
+}
+
+/* TOPBAR */
+
+.topbar{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+flex-wrap:wrap;
+}
+
+.brand{
+
+display:flex;
+
+align-items:center;
+
+gap:15px;
+}
+
+.logo{
+
+width:70px;
+height:70px;
+
+object-fit:contain;
+
+filter:
+drop-shadow(
+0 0 10px #00ffd0
+);
+}
+
+.title{
+
+font-size:36px;
+
+color:#00ffd0;
+
+font-weight:bold;
+}
+
+.clock{
+
+font-size:24px;
+}
+
+/* STATUS */
+
+.statusBar{
+
+margin-top:20px;
+
+display:flex;
+
+gap:15px;
+
+flex-wrap:wrap;
+}
+
+.status{
+
+background:#161b26;
+
+padding:10px 16px;
+
+border-radius:12px;
+}
+
+.dot{
+
+width:10px;
+height:10px;
+
+border-radius:50%;
+
+display:inline-block;
+
+margin-right:8px;
+
+background:red;
+}
+
+.green{
+
+background:lime;
+}
+
+/* CARDS */
+
+.container{
+
+margin-top:25px;
+
+display:grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(250px,1fr));
+
+gap:20px;
+}
+
+.card{
+
+background:#161b26;
+
+padding:25px;
+
+border-radius:20px;
+
+text-align:center;
+
+box-shadow:
+0 0 20px rgba(0,255,200,0.08);
+
+transition:0.3s;
+}
+
+.card:hover{
+
+transform:translateY(-5px);
+}
+
+.icon{
+
+font-size:45px;
+}
+
+.label{
+
+margin-top:12px;
+
+font-size:18px;
+
+color:#bbb;
+}
+
+.value{
+
+margin-top:12px;
+
+font-size:42px;
+
+color:#00ffd0;
+
+font-weight:bold;
+}
+
+/* ALERT */
+
+.alertBox{
+
+margin-top:30px;
+
+padding:25px;
+
+border-radius:20px;
+
+text-align:center;
+
+font-size:30px;
+
+font-weight:bold;
+
+background:#161b26;
+}
+
+.danger{
+
+background:#ff0033 !important;
+
+animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+
+50%{
+
+opacity:0.6;
+}
+}
+
+/* CHART */
+
+.chartContainer{
+
+margin-top:30px;
+
+background:#161b26;
+
+padding:20px;
+
+border-radius:20px;
+}
+
+canvas{
+
+width:100% !important;
+
+max-height:350px;
+}
+
+/* GAUGE */
+
+.gauge{
+
+width:140px;
+height:140px;
+
+border-radius:50%;
+
+margin:auto;
+
+display:flex;
+
+justify-content:center;
+align-items:center;
+
+font-size:28px;
+
+font-weight:bold;
+
+color:white;
+
+background:
+conic-gradient(
+#00ffd0 0deg,
+#00ffd0 180deg,
+#222 180deg
+);
+}
+
+/* MOBILE */
+
+@media(max-width:700px){
+
+.title{
+
+font-size:28px;
+}
+
+.clock{
+
+font-size:18px;
+}
+
+.value{
+
+font-size:32px;
+}
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- SPLASH -->
+
+<div id="splash">
+
+<img src="logo.png">
+
+<h1>HOME SHIELD</h1>
+
+</div>
+
+<!-- TOPBAR -->
+
+<div class="topbar">
+
+<div class="brand">
+
+<img src="logo.png"
+class="logo">
+
+<div class="title">
+HOME SHIELD
+</div>
+
+</div>
+
+<div class="clock"
+id="clock">
+--:--
+</div>
+
+</div>
+
+<!-- STATUS -->
+
+<div class="statusBar">
+
+<div class="status">
+
+<span class="dot green"></span>
+
+WiFi Connected
+</div>
+
+<div class="status">
+
+<span class="dot green"
+id="mqttDot"></span>
+
+MQTT Connected
+</div>
+
+</div>
+
+<!-- CARDS -->
+
+<div class="container">
+
+<div class="card">
+
+<div class="icon">🌡</div>
+
+<div class="label">
+Temperature
+</div>
+
+<div class="gauge"
+id="tempGauge">
+
+0°C
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="icon">💧</div>
+
+<div class="label">
+Humidity
+</div>
+
+<div class="gauge"
+id="humGauge">
+
+0%
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="icon">🛑</div>
+
+<div class="label">
+Air Quality
+</div>
+
+<div class="value"
+id="gas">
+
+GOOD
+</div>
+
+</div>
+
+</div>
+
+<!-- ALERT -->
+
+<div class="alertBox"
+id="alertBox">
+
+SYSTEM SAFE
+</div>
+
+<!-- CHART -->
+
+<div class="chartContainer">
+
+<canvas id="tempChart"></canvas>
+
+</div>
+
+<script>
+
+// SPLASH
+
+window.onload=function(){
+
+setTimeout(function(){
+
+document.getElementById(
+"splash"
+).style.opacity="0";
+
+setTimeout(function(){
+
+document.getElementById(
+"splash"
+).style.display="none";
+
+},1000);
+
+},2000);
+};
+
+// CLOCK
+
+function updateClock(){
+
+const now=new Date();
+
+document.getElementById(
+"clock"
+).innerHTML=
+now.toLocaleTimeString();
+}
+
+setInterval(updateClock,1000);
+
+updateClock();
+
+// ALERT SOUND
+
+const alarm=
+new Audio(
+'https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg'
+);
+
+// CHART
+
+const ctx=
+document.getElementById(
+'tempChart'
+).getContext('2d');
+
+const labels=[];
+
+const tempData=[];
+
+const humData=[];
+
+const chart=
+new Chart(ctx,{
+
+type:'line',
+
+data:{
+
+labels:labels,
+
+datasets:[
+
+{
+label:'Temperature',
+
+data:tempData,
+
+borderColor:'#00ffd0',
+
+fill:false
+},
+
+{
+label:'Humidity',
+
+data:humData,
+
+borderColor:'#00aaff',
+
+fill:false
+}
+
+]
+
+},
+
+options:{
+responsive:true
+}
+
+});
+
+// MQTT
+
+const client=mqtt.connect(
+'wss://broker.hivemq.com:8884/mqtt'
+);
+
+client.on('connect',function(){
+
+document.getElementById(
+"mqttDot"
+).classList.add("green");
+
+client.subscribe(
+"jageshroom/temp"
+);
+
+client.subscribe(
+"jageshroom/humidity"
+);
+
+client.subscribe(
+"jageshroom/gas"
+);
+
+client.subscribe(
+"jageshroom/alert"
+);
+
+});
+
+client.on('message',
+function(topic,message){
+
+let msg=
+message.toString();
+
+// TEMP
+
+if(topic==
+"jageshroom/temp"){
+
+document.getElementById(
+"tempGauge"
+).innerHTML=
+msg+"°C";
+
+let deg=
+(msg*4);
+
+document.getElementById(
+"tempGauge"
+).style.background=
+`conic-gradient(
+#00ffd0 ${deg}deg,
+#222 ${deg}deg
+)`;
+
+tempData.push(msg);
+
+if(tempData.length>15){
+
+tempData.shift();
+}
+
+labels.push("");
+
+if(labels.length>15){
+
+labels.shift();
+}
+
+chart.update();
+}
+
+// HUMIDITY
+
+if(topic==
+"jageshroom/humidity"){
+
+document.getElementById(
+"humGauge"
+).innerHTML=
+msg+"%";
+
+let deg=
+(msg*3.6);
+
+document.getElementById(
+"humGauge"
+).style.background=
+`conic-gradient(
+#00aaff ${deg}deg,
+#222 ${deg}deg
+)`;
+
+humData.push(msg);
+
+if(humData.length>15){
+
+humData.shift();
+}
+
+chart.update();
+}
+
+// GAS
+
+if(topic==
+"jageshroom/gas"){
+
+document.getElementById(
+"gas"
+).innerHTML=msg;
+}
+
+// ALERT
+
+if(topic==
+"jageshroom/alert"){
+
+const alertBox=
+document.getElementById(
+"alertBox"
+);
+
+alertBox.innerHTML=msg;
+
+if(
+msg=="GAS ALERT" ||
+msg=="HIGH TEMP ALERT"
+){
+
+alertBox.classList.add(
+"danger"
+);
+
+alarm.play();
+
+}else{
+
+alertBox.classList.remove(
+"danger"
+);
+}
+
+}
+
+});
+
+</script>
+
+<script>
+
+if ('serviceWorker' in navigator) {
+
+navigator.serviceWorker.register(
+'service-worker.js'
+);
+
+}
+
+</script>
+
+</body>
+</html>
