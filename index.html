@@ -516,20 +516,42 @@ setInterval(updateClock,1000);
 
 updateClock();
 
-// NOTIFICATION PERMISSION
+// NOTIFICATIONS
 
-if (
-Notification.permission !== "granted"
-) {
+async function enableNotifications(){
 
-Notification.requestPermission();
+if(Notification.permission !== "granted"){
+
+await Notification.requestPermission();
 }
+}
+
+enableNotifications();
 
 // ALERT SOUND
 
-const alarm=
-new Audio(
+const alarm = new Audio(
 'https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg'
+);
+
+alarm.preload = "auto";
+
+// UNLOCK SOUND
+
+document.body.addEventListener(
+'click',
+function(){
+
+alarm.play().then(() => {
+
+alarm.pause();
+
+alarm.currentTime = 0;
+
+}).catch(()=>{});
+
+},
+{ once:true }
 );
 
 // CHART
@@ -591,6 +613,8 @@ responsive:true
 const client=mqtt.connect(
 'wss://broker.hivemq.com:8884/mqtt'
 );
+
+let lastAlert = "";
 
 client.on('connect',function(){
 
@@ -742,16 +766,24 @@ document.getElementById(
 alertBox.innerHTML=msg;
 
 if(
+(
 msg=="GAS ALERT" ||
 msg=="HIGH TEMP ALERT" ||
 msg=="FIRE ALERT"
+)
+&&
+msg !== lastAlert
 ){
 
 alertBox.classList.add(
 "danger"
 );
 
+alarm.currentTime = 0;
+
 alarm.play();
+
+lastAlert = msg;
 
 // PHONE NOTIFICATION
 
@@ -771,11 +803,13 @@ icon: "logo.png"
 });
 }
 
-}else{
+}else if(msg=="NORMAL"){
 
 alertBox.classList.remove(
 "danger"
 );
+
+lastAlert = "";
 }
 
 }
