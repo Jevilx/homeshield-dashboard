@@ -2,8 +2,8 @@
 <html lang="en">
 
 <head>
-<link rel="manifest"
-href="manifest.json">
+
+<link rel="manifest" href="manifest.json">
 
 <meta charset="UTF-8">
 
@@ -21,7 +21,6 @@ href="logo.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-
 
 body{
 margin:0;
@@ -444,6 +443,22 @@ GOOD
 
 </div>
 
+<div class="card">
+
+<div class="icon">🔥</div>
+
+<div class="label">
+Fire Status
+</div>
+
+<div class="value"
+id="fire">
+
+SAFE
+</div>
+
+</div>
+
 </div>
 
 <!-- ALERT -->
@@ -461,7 +476,6 @@ SYSTEM SAFE
 <canvas id="tempChart"></canvas>
 
 </div>
-
 
 <script>
 
@@ -510,6 +524,7 @@ Notification.permission !== "granted"
 
 Notification.requestPermission();
 }
+
 // ALERT SOUND
 
 const alarm=
@@ -593,6 +608,10 @@ client.subscribe(
 
 client.subscribe(
 "jageshroom/gas"
+);
+
+client.subscribe(
+"jageshroom/fire"
 );
 
 client.subscribe(
@@ -686,6 +705,30 @@ document.getElementById(
 ).innerHTML=msg;
 }
 
+// FIRE
+
+if(topic==
+"jageshroom/fire"){
+
+document.getElementById(
+"fire"
+).innerHTML=msg;
+
+const fireCard =
+document.getElementById(
+"fire"
+);
+
+if(msg=="DETECTED"){
+
+fireCard.style.color="#ff0033";
+
+}else{
+
+fireCard.style.color="#00ffd0";
+}
+}
+
 // ALERT
 
 if(topic==
@@ -700,7 +743,8 @@ alertBox.innerHTML=msg;
 
 if(
 msg=="GAS ALERT" ||
-msg=="HIGH TEMP ALERT"
+msg=="HIGH TEMP ALERT" ||
+msg=="FIRE ALERT"
 ){
 
 alertBox.classList.add(
